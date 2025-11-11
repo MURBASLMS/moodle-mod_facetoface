@@ -331,7 +331,7 @@ if ($canviewattendees || $cantakeattendance) {
         }
 
         // LASTNAME header link.
-        $nextdir_last = (!empty($tsort) && $tsort === 'lastname' && $tdir === 'ASC') ? 'DESC' : 'ASC';
+        $nextdir_last = (!empty($tsort) && ($tsort === 'lastname') && $tdir === 'ASC') ? 'DESC' : 'ASC';
         $lastsortparams = $baseparams;
         $lastsortparams['tsort'] = 'lastname';
         $lastsortparams['tdir'] = $nextdir_last;
@@ -346,7 +346,7 @@ if ($canviewattendees || $cantakeattendance) {
         }
 
         // FIRSTNAME header link.
-        $nextdir_first = (!empty($tsort) && $tsort === 'firstname' && $tdir === 'ASC') ? 'DESC' : 'ASC';
+        $nextdir_first = (!empty($tsort) && ($tsort === 'firstname') && $tdir === 'ASC') ? 'DESC' : 'ASC';
         $firstsortparams = $baseparams;
         $firstsortparams['tsort'] = 'firstname';
         $firstsortparams['tdir'] = $nextdir_first;
@@ -361,7 +361,7 @@ if ($canviewattendees || $cantakeattendance) {
         }
 
         // USERNAME header link.
-        $nextdir_user = (!empty($tsort) && $tsort === 'username' && $tdir === 'ASC') ? 'DESC' : 'ASC';
+        $nextdir_user = (!empty($tsort) && ($tsort === 'username') && $tdir === 'ASC') ? 'DESC' : 'ASC';
         $usersortparams = $baseparams;
         $usersortparams['tsort'] = 'username';
         $usersortparams['tdir'] = $nextdir_user;
@@ -376,7 +376,7 @@ if ($canviewattendees || $cantakeattendance) {
         }
 
         // ATTENDANCE header link.
-        $nextdir_att = (!empty($tsort) && $tsort === 'attendance' && $tdir === 'ASC') ? 'DESC' : 'ASC';
+        $nextdir_att = (!empty($tsort) && ($tsort === 'attendance') && $tdir === 'ASC') ? 'DESC' : 'ASC';
         $attsortparams = $baseparams;
         $attsortparams['tsort'] = 'attendance';
         $attsortparams['tdir'] = $nextdir_att;
@@ -396,17 +396,17 @@ if ($canviewattendees || $cantakeattendance) {
             $table->head = [
                 html_writer::link(
                     $lastsorturl,
-                    get_string('lastname', 'moodle') .
+                    get_string('lastname', 'facetoface') .
                     html_writer::tag('span', $last_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
-                    html_writer::tag('span', ' ' . (($nextdir_last === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                    html_writer::tag('span', ' ' . ($nextdir_last === 'ASC' ? get_string('sortbyascending', 'facetoface', get_string('lastname', 'facetoface')) : get_string('sortbydescending', 'facetoface', get_string('lastname', 'facetoface'))),
                         ['class' => 'accesshide']),
                     ['data-sortable' => '1', 'data-sortby' => 'lastname', 'data-sortorder' => ($nextdir_last === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $last_aria]
                 ),
                 html_writer::link(
                     $firstsorturl,
-                    get_string('firstname', 'moodle') .
+                    get_string('firstname', 'facetoface') .
                     html_writer::tag('span', $first_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
-                    html_writer::tag('span', ' ' . (($nextdir_first === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                    html_writer::tag('span', ' ' . ($nextdir_first === 'ASC' ? get_string('sortbyascending', 'facetoface', get_string('firstname', 'facetoface')) : get_string('sortbydescending', 'facetoface', get_string('firstname', 'facetoface'))),
                         ['class' => 'accesshide']),
                     ['data-sortable' => '1', 'data-sortby' => 'firstname', 'data-sortorder' => ($nextdir_first === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $first_aria]
                 ),
@@ -414,7 +414,7 @@ if ($canviewattendees || $cantakeattendance) {
                     $attsorturl,
                     get_string('currentstatus', 'facetoface') .
                     html_writer::tag('span', $att_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
-                    html_writer::tag('span', ' ' . (($nextdir_att === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                    html_writer::tag('span', ' ' . ($nextdir_att === 'ASC' ? get_string('sortbyascending', 'facetoface', get_string('currentstatus', 'facetoface')) : get_string('sortbydescending', 'facetoface', get_string('currentstatus', 'facetoface'))),
                         ['class' => 'accesshide']),
                     ['data-sortable' => '1', 'data-sortby' => 'attendance', 'data-sortorder' => ($nextdir_att === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $att_aria]
                 ),
@@ -427,17 +427,17 @@ if ($canviewattendees || $cantakeattendance) {
             $head = [];
             $head[] = html_writer::link(
                 $lastsorturl,
-                get_string('lastname', 'moodle') .
+                get_string('lastname', 'facetoface') .
                 html_writer::tag('span', $last_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
-                html_writer::tag('span', ' ' . (($nextdir_last === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                html_writer::tag('span', ' ' . ($nextdir_last === 'ASC' ? get_string('sortbyascending', 'facetoface', get_string('lastname', 'facetoface')) : get_string('sortbydescending', 'facetoface', get_string('lastname', 'facetoface'))),
                     ['class' => 'accesshide']),
                 ['data-sortable' => '1', 'data-sortby' => 'lastname', 'data-sortorder' => ($nextdir_last === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $last_aria]
             );
             $head[] = html_writer::link(
                 $firstsorturl,
-                get_string('firstname', 'moodle') .
+                get_string('firstname', 'facetoface') .
                 html_writer::tag('span', $first_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
-                html_writer::tag('span', ' ' . (($nextdir_first === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                html_writer::tag('span', ' ' . ($nextdir_first === 'ASC' ? get_string('sortbyascending', 'facetoface', get_string('firstname', 'facetoface')) : get_string('sortbydescending', 'facetoface', get_string('firstname', 'facetoface'))),
                     ['class' => 'accesshide']),
                 ['data-sortable' => '1', 'data-sortby' => 'firstname', 'data-sortorder' => ($nextdir_first === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $first_aria]
             );
@@ -445,9 +445,9 @@ if ($canviewattendees || $cantakeattendance) {
             // Username header (sortable)
             $head[] = html_writer::link(
                 $usersorturl,
-                get_string('username') .
+                get_string('username', 'facetoface') .
                 html_writer::tag('span', $user_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
-                html_writer::tag('span', ' ' . (($nextdir_user === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                html_writer::tag('span', ' ' . ($nextdir_user === 'ASC' ? get_string('sortbyascending', 'facetoface', get_string('username', 'facetoface')) : get_string('sortbydescending', 'facetoface', get_string('username', 'facetoface'))),
                     ['class' => 'accesshide']),
                 ['data-sortable' => '1', 'data-sortby' => 'username', 'data-sortorder' => ($nextdir_user === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $user_aria]
             );
@@ -465,7 +465,7 @@ if ($canviewattendees || $cantakeattendance) {
                 $attsorturl,
                 get_string('attendance', 'facetoface') .
                 html_writer::tag('span', $att_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
-                html_writer::tag('span', ' ' . (($nextdir_att === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                html_writer::tag('span', ' ' . ($nextdir_att === 'ASC' ? get_string('sortbyascending', 'facetoface', get_string('attendance', 'facetoface')) : get_string('sortbydescending', 'facetoface', get_string('attendance', 'facetoface'))),
                     ['class' => 'accesshide']),
                 ['data-sortable' => '1', 'data-sortby' => 'attendance', 'data-sortorder' => ($nextdir_att === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $att_aria]
             );
@@ -557,9 +557,9 @@ if ($canviewattendees || $cantakeattendance) {
         echo html_writer::link($editattendeeslink, get_string('addremoveattendees', 'facetoface')) . ' - ';
     }
     echo html_writer::link("attendees.php?s=$session->id&backtoallsessions=$session->facetoface&download=ods",
-            get_string('downloadods')) . ' - ';
+            get_string('downloadods', 'facetoface')) . ' - ';
     echo html_writer::link("attendees.php?s=$session->id&backtoallsessions=$session->facetoface&download=xls",
-            get_string('downloadexcel')) . ' - ';
+            get_string('downloadexcel', 'facetoface')) . ' - ';
 }
 
 // Go back.
@@ -596,7 +596,7 @@ if ($canapproverequests) {
 
         $table = new html_table();
         $table->head = [
-            get_string('name'), get_string('timerequested', 'facetoface'),
+            get_string('name', 'facetoface'), get_string('timerequested', 'facetoface'),
             get_string('decidelater', 'facetoface'), get_string('decline', 'facetoface'),
             get_string('approve', 'facetoface'),
         ];
@@ -643,7 +643,7 @@ if (!$takeattendance && $canviewcancellations && $cancellations) {
     $table = new html_table();
     $table->summary = get_string('cancellationstablesummary', 'facetoface');
     $table->head = [
-        get_string('name'), get_string('timesignedup', 'facetoface'),
+        get_string('name', 'facetoface'), get_string('timesignedup', 'facetoface'),
         get_string('timecancelled', 'facetoface'), get_string('cancelreason', 'facetoface'),
     ];
     $table->align = ['left', 'center', 'center'];
