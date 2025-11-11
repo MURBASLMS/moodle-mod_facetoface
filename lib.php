@@ -1518,9 +1518,7 @@ function facetoface_download_attendees($facetofacename, $session, $attendees, $f
                 // Get the data from the attendees profile field.
                 $data = $attendee->$shortname;
                 if ($shortname == 'email') {
-                    $format['underline'] = 1;
-                    $format['color'] = 'blue';
-                    $worksheet->write_url($row, $column++, 'mailto:' . $data, $format);
+                    $worksheet->write_string($row, $column++, $data, $format);
                     continue;
                 }
             } else if (property_exists($user, $shortname)) {
