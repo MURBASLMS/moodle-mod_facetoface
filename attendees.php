@@ -68,31 +68,51 @@ if (!empty($attendees)) {
     }
 }
 
-// Default to sorting by fullname if no tsort provided.
+// Default to sorting by lastname (i.e. fullname order) if no tsort provided.
 if (empty($tsort)) {
-    $tsort = 'fullname';
+    $tsort = 'lastname';
 }
 
-// Server-side sorting: implement username and fullname sorts (fullname is default).
-if (!empty($tsort) && $tsort === 'username') {
+// Server-side sorting: implement username, lastname, firstname and attendance sorts.
+// lastname acts as the fullname default (lastname + firstname).
+if ($tsort === 'username') {
     usort($attendees, function($a, $b) use ($users, $tdir) {
         $ua = isset($users[$a->id]) ? $users[$a->id]->username : '';
         $ub = isset($users[$b->id]) ? $users[$b->id]->username : '';
-        // case-insensitive compare
         $cmp = strcasecmp($ua, $ub);
         if ($cmp === 0) {
-            // stable secondary sort by fullname as fallback
             $cmp = strcasecmp($a->lastname . $a->firstname, $b->lastname . $b->firstname);
         }
         return ($tdir === 'DESC') ? -$cmp : $cmp;
     });
-} else if ($tsort === 'fullname') {
+} else if ($tsort === 'firstname') {
+    usort($attendees, function($a, $b) use ($tdir) {
+        $ua = $a->firstname . ' ' . $a->lastname;
+        $ub = $b->firstname . ' ' . $b->lastname;
+        $cmp = strcasecmp($ua, $ub);
+        if ($cmp === 0) {
+            return ($tdir === 'DESC') ? ($b->id - $a->id) : ($a->id - $b->id);
+        }
+        return ($tdir === 'DESC') ? -$cmp : $cmp;
+    });
+} else if ($tsort === 'attendance') {
+    // Compare by status string (localized) fallback to numeric statuscode.
+    usort($attendees, function($a, $b) use ($tdir) {
+        $sa = get_string('status_'.facetoface_get_status($a->statuscode), 'facetoface');
+        $sb = get_string('status_'.facetoface_get_status($b->statuscode), 'facetoface');
+        $cmp = strcasecmp($sa, $sb);
+        if ($cmp === 0) {
+            return ($tdir === 'DESC') ? ($b->id - $a->id) : ($a->id - $b->id);
+        }
+        return ($tdir === 'DESC') ? -$cmp : $cmp;
+    });
+} else {
+    // lastname and default.
     usort($attendees, function($a, $b) use ($tdir) {
         $ua = $a->lastname . ' ' . $a->firstname;
         $ub = $b->lastname . ' ' . $b->firstname;
         $cmp = strcasecmp($ua, $ub);
         if ($cmp === 0) {
-            // fallback to id if names identical
             return ($tdir === 'DESC') ? ($b->id - $a->id) : ($a->id - $b->id);
         }
         return ($tdir === 'DESC') ? -$cmp : $cmp;
@@ -290,12 +310,11 @@ if ($canviewattendees || $cantakeattendance) {
         echo '<style>.facetoface-sort-indicator{margin-left:.25em;font-size:.9em}</style>';
 
         $table = new html_table();
-        // Add username column next to name for easier identification.
-        $table->head = ['', ''];
-        $table->align = ['left', 'left'];
-        $table->size = ['70%', '30%'];
 
-        // Append our class (do not replace any existing classes).
+        // Build table headers with sorting links for lastname, firstname, username (if shown), and attendance.
+        // We'll split the name into Last name and First name columns for clarity.
+
+        // Base table classes: append our class (do not replace any existing classes).
         if (empty($table->attributes)) {
             $table->attributes = [];
         }
@@ -305,43 +324,47 @@ if ($canviewattendees || $cantakeattendance) {
             $table->attributes['class'] = 'facetoface_attendees_table';
         }
 
-        // Build header links for fullname and username (fullname is default sort).
+        // Prepare base params so sort links preserve context (takeattendance/backtoallsessions).
         $baseparams = ['s' => $s, 'backtoallsessions' => $backtoallsessions];
         if ($takeattendance) {
             $baseparams['takeattendance'] = '1';
         }
 
-        // Name (fullname) column: determine next direction and current aria/symbol.
-        $nextdir_name = (!empty($tsort) && $tsort === 'fullname' && $tdir === 'ASC') ? 'DESC' : 'ASC';
-        $namesortparams = $baseparams;
-        $namesortparams['tsort'] = 'fullname';
-        $namesortparams['tdir'] = $nextdir_name;
-        $namesorturl = new moodle_url('/mod/facetoface/attendees.php', $namesortparams);
+        // LASTNAME header link.
+        $nextdir_last = (!empty($tsort) && $tsort === 'lastname' && $tdir === 'ASC') ? 'DESC' : 'ASC';
+        $lastsortparams = $baseparams;
+        $lastsortparams['tsort'] = 'lastname';
+        $lastsortparams['tdir'] = $nextdir_last;
+        $lastsorturl = new moodle_url('/mod/facetoface/attendees.php', $lastsortparams);
 
-        // Current indicator and aria-sort for fullname header.
-        if (!empty($tsort) && $tsort === 'fullname') {
-            $name_indicator = ($tdir === 'ASC') ? '▲' : '▼';
-            $name_aria = ($tdir === 'ASC') ? 'ascending' : 'descending';
+        if (!empty($tsort) && $tsort === 'lastname') {
+            $last_indicator = ($tdir === 'ASC') ? '▲' : '▼';
+            $last_aria = ($tdir === 'ASC') ? 'ascending' : 'descending';
         } else {
-            $name_indicator = '';
-            $name_aria = 'none';
+            $last_indicator = '';
+            $last_aria = 'none';
         }
 
-        $table->head[0] = html_writer::link(
-            $namesorturl,
-            get_string('name') .
-            html_writer::tag('span', $name_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
-            html_writer::tag('span', ' ' . (($nextdir_name === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
-                ['class' => 'accesshide'])
-            ,
-            ['data-sortable' => '1', 'data-sortby' => 'fullname', 'data-sortorder' => ($nextdir_name === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $name_aria]
-        );
+        // FIRSTNAME header link.
+        $nextdir_first = (!empty($tsort) && $tsort === 'firstname' && $tdir === 'ASC') ? 'DESC' : 'ASC';
+        $firstsortparams = $baseparams;
+        $firstsortparams['tsort'] = 'firstname';
+        $firstsortparams['tdir'] = $nextdir_first;
+        $firstsorturl = new moodle_url('/mod/facetoface/attendees.php', $firstsortparams);
 
-        // Username column: determine next direction and current aria/symbol.
-        $nextdir = (!empty($tsort) && $tsort === 'username' && $tdir === 'ASC') ? 'DESC' : 'ASC';
+        if (!empty($tsort) && $tsort === 'firstname') {
+            $first_indicator = ($tdir === 'ASC') ? '▲' : '▼';
+            $first_aria = ($tdir === 'ASC') ? 'ascending' : 'descending';
+        } else {
+            $first_indicator = '';
+            $first_aria = 'none';
+        }
+
+        // USERNAME header link.
+        $nextdir_user = (!empty($tsort) && $tsort === 'username' && $tdir === 'ASC') ? 'DESC' : 'ASC';
         $usersortparams = $baseparams;
         $usersortparams['tsort'] = 'username';
-        $usersortparams['tdir'] = $nextdir;
+        $usersortparams['tdir'] = $nextdir_user;
         $usersorturl = new moodle_url('/mod/facetoface/attendees.php', $usersortparams);
 
         if (!empty($tsort) && $tsort === 'username') {
@@ -352,63 +375,153 @@ if ($canviewattendees || $cantakeattendance) {
             $user_aria = 'none';
         }
 
-        $table->head[1] = html_writer::link(
-            $usersorturl,
-            get_string('username') .
-            html_writer::tag('span', $user_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
-            html_writer::tag('span', ' ' . (($nextdir === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
-                ['class' => 'accesshide'])
-            ,
-            ['data-sortable' => '1', 'data-sortby' => 'username', 'data-sortorder' => ($nextdir === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $user_aria]
-        );
+        // ATTENDANCE header link.
+        $nextdir_att = (!empty($tsort) && $tsort === 'attendance' && $tdir === 'ASC') ? 'DESC' : 'ASC';
+        $attsortparams = $baseparams;
+        $attsortparams['tsort'] = 'attendance';
+        $attsortparams['tdir'] = $nextdir_att;
+        $attsorturl = new moodle_url('/mod/facetoface/attendees.php', $attsortparams);
 
-        if ($takeattendance) {
-            $table->head[] = get_string('currentstatus', 'facetoface');
-            $table->align[] = 'center';
-            $table->head[] = get_string('attendedsession', 'facetoface');
-            $table->align[] = 'center';
+        if (!empty($tsort) && $tsort === 'attendance') {
+            $att_indicator = ($tdir === 'ASC') ? '▲' : '▼';
+            $att_aria = ($tdir === 'ASC') ? 'ascending' : 'descending';
         } else {
+            $att_indicator = '';
+            $att_aria = 'none';
+        }
+
+        // Now build header depending on whether we're taking attendance.
+        if ($takeattendance) {
+            // Take attendance view: Last, First, Current status (sortable), Attended (select)
+            $table->head = [
+                html_writer::link(
+                    $lastsorturl,
+                    get_string('lastname', 'moodle') .
+                    html_writer::tag('span', $last_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
+                    html_writer::tag('span', ' ' . (($nextdir_last === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                        ['class' => 'accesshide']),
+                    ['data-sortable' => '1', 'data-sortby' => 'lastname', 'data-sortorder' => ($nextdir_last === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $last_aria]
+                ),
+                html_writer::link(
+                    $firstsorturl,
+                    get_string('firstname', 'moodle') .
+                    html_writer::tag('span', $first_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
+                    html_writer::tag('span', ' ' . (($nextdir_first === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                        ['class' => 'accesshide']),
+                    ['data-sortable' => '1', 'data-sortby' => 'firstname', 'data-sortorder' => ($nextdir_first === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $first_aria]
+                ),
+                html_writer::link(
+                    $attsorturl,
+                    get_string('currentstatus', 'facetoface') .
+                    html_writer::tag('span', $att_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
+                    html_writer::tag('span', ' ' . (($nextdir_att === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                        ['class' => 'accesshide']),
+                    ['data-sortable' => '1', 'data-sortby' => 'attendance', 'data-sortorder' => ($nextdir_att === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $att_aria]
+                ),
+                get_string('attendedsession', 'facetoface')
+            ];
+            $table->align = ['left', 'left', 'center', 'center'];
+            $table->size = ['30%', '30%', '20%', '20%'];
+        } else {
+            // Normal view: Last, First, Username (sortable), maybe cost/discount, Attendance (sortable)
+            $head = [];
+            $head[] = html_writer::link(
+                $lastsorturl,
+                get_string('lastname', 'moodle') .
+                html_writer::tag('span', $last_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
+                html_writer::tag('span', ' ' . (($nextdir_last === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                    ['class' => 'accesshide']),
+                ['data-sortable' => '1', 'data-sortby' => 'lastname', 'data-sortorder' => ($nextdir_last === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $last_aria]
+            );
+            $head[] = html_writer::link(
+                $firstsorturl,
+                get_string('firstname', 'moodle') .
+                html_writer::tag('span', $first_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
+                html_writer::tag('span', ' ' . (($nextdir_first === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                    ['class' => 'accesshide']),
+                ['data-sortable' => '1', 'data-sortby' => 'firstname', 'data-sortorder' => ($nextdir_first === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $first_aria]
+            );
+
+            // Username header (sortable)
+            $head[] = html_writer::link(
+                $usersorturl,
+                get_string('username') .
+                html_writer::tag('span', $user_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
+                html_writer::tag('span', ' ' . (($nextdir_user === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                    ['class' => 'accesshide']),
+                ['data-sortable' => '1', 'data-sortby' => 'username', 'data-sortorder' => ($nextdir_user === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $user_aria]
+            );
+
+            // Optional cost/discount columns (preserve previous layout).
             if (!get_config('facetoface', 'hidecost')) {
-                $table->head[] = get_string('cost', 'facetoface');
-                $table->align[] = 'center';
+                $head[] = get_string('cost', 'facetoface');
                 if (!get_config('facetoface', 'hidediscount')) {
-                    $table->head[] = get_string('discountcode', 'facetoface');
-                    $table->align[] = 'center';
+                    $head[] = get_string('discountcode', 'facetoface');
                 }
             }
 
-            $table->head[] = get_string('attendance', 'facetoface');
+            // Attendance (sortable)
+            $head[] = html_writer::link(
+                $attsorturl,
+                get_string('attendance', 'facetoface') .
+                html_writer::tag('span', $att_indicator, ['class' => 'facetoface-sort-indicator', 'aria-hidden' => 'true']) .
+                html_writer::tag('span', ' ' . (($nextdir_att === 'ASC') ? get_string('sortbyascending', 'moodle') : get_string('sortbydescending', 'moodle')),
+                    ['class' => 'accesshide']),
+                ['data-sortable' => '1', 'data-sortby' => 'attendance', 'data-sortorder' => ($nextdir_att === 'ASC' ? '1' : '0'), 'role' => 'button', 'aria-sort' => $att_aria]
+            );
+
+            $table->head = $head;
+            // Build align array consistent with head columns:
+            $table->align = ['left', 'left', 'left'];
+            if (!get_config('facetoface', 'hidecost')) {
+                $table->align[] = 'center';
+                if (!get_config('facetoface', 'hidediscount')) {
+                    $table->align[] = 'center';
+                }
+            }
             $table->align[] = 'center';
+            $table->size = ['20%', '20%', '20%', '15%', '15%'];
         }
 
+        // Populate rows.
         foreach ($attendees as $attendee) {
             $data = [];
-            $attendeeurl = new moodle_url('/user/view.php', ['id' => $attendee->id, 'course' => $course->id]);
-            $data[] = html_writer::link($attendeeurl, format_string(fullname($attendee)));
 
-            // Use preloaded user record and show username (username exists).
-            $user = isset($users[$attendee->id]) ? $users[$attendee->id] : null;
-            $username = $user ? $user->username : '';
-            $data[] = format_string($username);
+            // Last name cell (link to profile using lastname text).
+            $attendeeurl = new moodle_url('/user/view.php', ['id' => $attendee->id, 'course' => $course->id]);
+            $data[] = html_writer::link($attendeeurl, format_string($attendee->lastname));
+
+            // First name cell.
+            $data[] = format_string($attendee->firstname);
 
             if ($takeattendance) {
-                // Show current status.
+                // Show current status (text)
                 $data[] = get_string('status_'.facetoface_get_status($attendee->statuscode), 'facetoface');
 
+                // Select to update attended status (as previous behaviour)
                 $optionid = 'submissionid_'.$attendee->submissionid;
                 $status = $attendee->statuscode;
                 $select = html_writer::select($statusoptions, $optionid, $status);
                 $data[] = $select;
             } else {
+                // Username column (preloaded)
+                $user = isset($users[$attendee->id]) ? $users[$attendee->id] : null;
+                $username = $user ? $user->username : '';
+                $data[] = format_string($username);
+
+                // cost/discount if enabled
                 if (!get_config('facetoface', 'hidecost')) {
                     $data[] = facetoface_cost($attendee->id, $session->id, $session);
                     if (!get_config('facetoface', 'hidediscount')) {
                         $data[] = $attendee->discountcode;
                     }
                 }
+
+                // Attendance text
                 $data[] = str_replace(' ', '&nbsp;',
                     get_string('status_'.facetoface_get_status($attendee->statuscode), 'facetoface'));
             }
+
             $table->data[] = $data;
         }
 
